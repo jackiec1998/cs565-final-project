@@ -1,10 +1,16 @@
 from typing import List
-from loader import PostDict, TagDict, UserDict
+from loader import AnswerDict, PostDict, TagDict, UserDict
+import re
+from nltk.corpus import stopwords
 
 
 class User:
     def __init__(self, user_dict: UserDict):
         self.raw_data = user_dict
+
+    @property
+    def Posts(self):
+        return [Post(p) for p in self.raw_data["Posts"]]
 
     ##################################
     ### BACKWARD-COMPATIBLE FIELDS ###
@@ -123,6 +129,34 @@ class User:
                                  for post in self.raw_data["Posts"]
                                  if "Tags" in post])
 
+
+class Post:
+    def __init__(self, post_dict: PostDict):
+        self.raw_data = post_dict
+
+    @property
+    def Body(self):
+        return self.raw_data["Body"]
+
+    @property
+    def Answers(self):
+        if self.raw_data["PostType"] != "Question":
+            return None
+
+        if "Answers" not in self.raw_data:
+            return []
+
+        return [Answer(answer) for answer in self.raw_data["Answers"]]
+
+
+class Answer:
+    def __init__(self, answer_dict: AnswerDict):
+        self.raw_data = answer_dict
+
+    @property
+    def Body(self):
+        return self.raw_data["Body"]
+
 #############################
 ### MORE HELPER FUNCTIONS ###
 #############################
@@ -163,3 +197,53 @@ def extract_tag_corpus(users: List[User]):
     corpus = merge_tag_counts([user.get_tags() for user in users])
     corpus.sort(key=lambda x: x["Count"], reverse=True)
     return corpus
+
+
+def tokenize_body(body: str, remove_stopwords=True, remove_smallwords=True):
+    # Make everything lowercase
+    body = body.lower()
+
+    # Collapse links into single token
+    body = re.sub(r'\<a.*?\>.*?\</a\>', '<a>', body, flags=re.DOTALL)
+
+    # Collapse code blocks into single token
+    body = re.sub(r'\<code\>.*?\</code\>', '<code>', body, flags=re.DOTALL)
+
+    # Remove ending tags
+    body = re.sub(r'\</.*?\>', ' ', body)
+
+    # Remove any unkown tags
+    known_tags = {'a', 'code'}
+    body = re.sub(r'\<(.*?)\>', lambda m: m.group(0)
+                  if m.group(1) in known_tags else ' ', body)
+
+    # Replace numbers with special token
+    body = re.sub(r'[,.]?[0-9][0-9,.]*', '<num>', body)
+
+    # Put space around special tokens
+    body = re.sub(r'\<.*?\>', r' \g<0> ', body)
+
+    # Remove escape sequences
+    body = re.sub(r'&[a-z]+;', '', body)
+
+    # Remove punctuation
+    body = re.sub(r'[\'`"’‘]', '', body)
+
+    # Remove remaining non-alphabetic chars
+    body = re.sub(r'[^a-z\s<>]', ' ', body)
+
+    tokens = body.split()
+
+    if remove_stopwords:
+        _stopwords = stopwords.words('english')
+        tokens = [token for token in tokens if token not in _stopwords]
+
+    if remove_smallwords:
+        tokens = [token for token in tokens if len(token) >= 3]
+
+    # Collapse identical consecutive tokens
+    for i in range(1, len(tokens))[::-1]:
+        if re.match(r'\<.*\>', tokens[i]) and tokens[i] == tokens[i - 1]:
+            del tokens[i]
+
+    return tokens
