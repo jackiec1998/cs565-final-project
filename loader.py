@@ -26,6 +26,7 @@ class AnswerDict(TypedDict):
     AnswererId: int
     AnswererRep: int
     AnswererAge: int
+    Body: str
     IsAcceptedAnswer: Literal[0] | Literal[1]
     Score: int
 
