@@ -2,6 +2,7 @@ from typing import List
 from loader import AnswerDict, PostDict, TagDict, UserDict
 import re
 from nltk.corpus import stopwords
+from datetime import date
 
 
 class User:
@@ -53,6 +54,10 @@ class User:
         return len(self.raw_data["Posts"])
 
     @property
+    def NumFuturePosts(self):
+        return self.raw_data["NumFuturePosts"]
+
+    @property
     def NumQuestions(self):
         return len([post
                     for post in self.raw_data["Posts"]
@@ -98,6 +103,162 @@ class User:
         return maybe_avg([post["ViewCount"]
                           for post in self.raw_data["Posts"]
                           if "ViewCount" in post])
+
+    ###########################
+    ### FEATURE COMPUTATION ###
+    ###########################
+
+    @property
+    def f_age_at_first_post(self):
+        '''
+        Age of the account at first post (in days)
+
+        int x, x > 0
+        '''
+        return (self.raw_data["FirstPostDate"] - self.raw_data["AccountCreationDate"]).days
+
+    @property
+    def f_num_init_posts(self):
+        '''
+        Number of initial posts
+
+        int x, x > 0
+        '''
+        return len(self.raw_data["Posts"])
+
+    @property
+    def f_prop_qs(self):
+        '''
+        Proportion of questions in initial posts
+
+        real x, 0 <= x <= 1
+        '''
+        return sum(1 for post in self.raw_data["Posts"]
+                   if post["PostType"] == "Question") \
+            / self.f_num_init_posts
+
+    @property
+    def f_avg_init_post_len(self):
+        '''
+        Average length of body of initial posts
+
+        real x, x > 0
+        '''
+        return sum(len(post["Body"])
+                   for post in self.raw_data["Posts"]) \
+            / self.f_num_init_posts
+
+    @property
+    def f_avg_num_edits(self):
+        '''
+        Average number of edits received on initial posts
+
+        real x, x > 0
+        '''
+        return sum(len(post["Edits"]) if "Edits" in post else 0
+                   for post in self.raw_data["Posts"]) \
+            / self.f_num_init_posts
+
+    @property
+    def f_avg_rep_editors(self):
+        '''
+        Average reputation of editors
+
+        real x, x > 0 or None if no edits received
+        '''
+        return maybe_avg([edit["EditorRep"] for edit in self.get_edits()])
+
+    @property
+    def f_avg_age_editors(self):
+        '''
+        Average age of editors (in days)
+
+        real x, x > 0 or None if no edits received
+        '''
+        return maybe_avg([edit["EditorAge"] for edit in self.get_edits()])
+
+    @property
+    def f_avg_num_answers(self):
+        '''
+        Average number of answers received for each question posted
+
+        real x, x > 0 or None if no questions posted
+        '''
+        return maybe_avg([len(post["Answers"]) if "Answers" in post else 0
+                          for post in self.raw_data["Posts"]
+                          if post["PostType"] == "Question"])
+
+    @property
+    def f_avg_rep_top_answerers(self):
+        '''
+        Average reputation of author of the user selected answer or
+        top scoring answer
+
+        real x, x > 0 or None if no questions posted or no answers received
+        '''
+        return maybe_avg([answer["AnswererRep"] for answer in self.get_top_answers()])
+
+    @property
+    def f_avg_age_top_answerers(self):
+        '''
+        Average age (in days) of author of the user selected answer or
+        top scoring answer 
+
+        real x, x > 0 or None if no questions posted or no answers received
+        '''
+        return maybe_avg([answer["AnswererAge"] for answer in self.get_top_answers()])
+
+    @property
+    def f_avg_num_upvotes(self):
+        '''
+        Average number of upvotes received per initial post
+
+        real x, x > 0
+        '''
+        return sum(1 for vote in self.get_votes()
+                   if vote["VoteType"] == "UpMod") \
+            / self.f_num_init_posts
+
+    @property
+    def f_avg_num_downvotes(self):
+        '''
+        Average number of downvotes received per initial post
+
+        real x, x > 0
+        '''
+        return sum(1 for vote in self.get_votes()
+                   if vote["VoteType"] == "DownMod") \
+            / self.f_num_init_posts
+
+    @property
+    def f_avg_num_bookmarkers(self):
+        '''
+        Average number of people who bookmarked each initial post
+
+        real x, x > 0
+        '''
+        return sum(1 for vote in self.get_votes()
+                   if vote["VoteType"] == "Bookmark") \
+            / self.f_num_init_posts 
+
+    @property
+    def f_prop_accepted_answers(self):
+        '''
+        Proportion of answers (posted by this user) 
+        that were accepted by the asker
+
+        real x, 0 <= x <= 1 or None if no answers were posted
+        '''
+        return maybe_div(sum(1 for vote in self.get_votes()
+                             if vote["VoteType"] == "AcceptedByOriginator"),
+                         self.NumAnswers)
+
+    @property
+    def f_retention(self):
+        '''
+        1 if user makes another post after 6mo, 0 otherwise
+        '''
+        return 1 if self.NumFuturePosts > 0 else 0
 
     ########################
     ### HELPER FUNCTIONS ###
@@ -160,6 +321,10 @@ class Answer:
 #############################
 ### MORE HELPER FUNCTIONS ###
 #############################
+
+
+def maybe_div(n: float, d: float):
+    return n / d if d != 0 else None
 
 
 def maybe_avg(vals: List[float]):
