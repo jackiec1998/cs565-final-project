@@ -265,7 +265,13 @@ def analyze_all():
 
     # Step 2: Analyze subsets of features
     # analyze_subset(normed_dataset, F_BASIC)
-    analyze_subset(normed_dataset, F_ANSWERER)
+    analyze_subset(normed_dataset, F_ANSWERED)
+
+    print()
+    print('--- MEAN ---')
+    print(dataset.mean())
+    print('\n--- STD ---')
+    print(dataset.std())
 
 
 if __name__ == "__main__":
