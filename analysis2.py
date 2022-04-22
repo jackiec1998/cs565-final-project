@@ -149,9 +149,6 @@ def union_cols(*cols_seq: Sequence[tuple[str]]) -> tuple[str]:
     return tuple(sorted(set(col for cols in cols_seq for col in cols), key=lambda col: F_ALL.index(col)))
 
 
-'''
-All feature names
-'''
 F_ALL = (
     "age_at_first_post",
     "num_init_posts",
@@ -169,12 +166,11 @@ F_ALL = (
     "prop_accepted_answers",
     "retention"
 )
+'''
+All feature names
+'''
 
 
-'''
-Names of basic input features gauranteed to be 
-applicable to all users 
-'''
 F_BASIC = (
     "age_at_first_post",
     "num_init_posts",
@@ -186,40 +182,47 @@ F_BASIC = (
     "avg_num_bookmarkers",
     "retention"
 )
+'''
+Names of basic input features gauranteed to be 
+applicable to all users 
+'''
 
 
+F_EDITED = union_cols(F_BASIC, (
+    "avg_rep_editors",
+    "avg_age_editors"
+))
 '''
 Names of features that are guaranteed to be 
 applicable to all users that have received at least 
 one edit
 '''
-F_EDITED = union_cols(F_BASIC, (
-    "avg_rep_editors",
-    "avg_age_editors"
-))
 
+
+F_ASKER = union_cols(F_BASIC, ("avg_num_answers",))
 '''
 Names of features that care guaranteed to be 
 applicable to all users that have posted at least 
 one question
 '''
-F_ASKER = union_cols(F_BASIC, ("avg_num_answers",))
 
+
+F_ANSWERED = union_cols(F_ASKER, (
+    "avg_rep_top_answerers",
+    "avg_age_top_answerers"
+))
 '''
 Names of features that care guaranteed to be present
 on all users that have posted at least one question and 
 received at least one answer
 '''
-F_ANSWERED = union_cols(F_ASKER, (
-    "avg_rep_top_answerers",
-    "avg_age_top_answerers"
-))
 
+
+F_ANSWERER = union_cols(F_BASIC, ("prop_accepted_answers",))
 '''
 Names of features that are guaranteed to be present
 on all users that have posted at least one answer
 '''
-F_ANSWERER = union_cols(F_BASIC, ("prop_accepted_answers",))
 
 
 def analyze_subset(dataset: np.ndarray, cols: tuple[int]):
