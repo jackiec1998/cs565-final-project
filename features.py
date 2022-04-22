@@ -2,7 +2,11 @@ from typing import List
 from loader import AnswerDict, PostDict, TagDict, UserDict
 import re
 from nltk.corpus import stopwords
-from datetime import date
+import spacy
+from spacytextblob.spacytextblob import SpacyTextBlob
+
+nlp = spacy.load('en_core_web_sm')
+nlp.add_pipe('spacytextblob')
 
 
 class User:
@@ -209,6 +213,16 @@ class User:
         return maybe_avg([answer["AnswererAge"] for answer in self.get_top_answers()])
 
     @property
+    def f_avg_answer_subjectivity(self):
+        '''
+        TODO
+        '''
+        return maybe_avg([nlp(answer["Body"])._.subjectivity
+                          for post in self.raw_data["Posts"]
+                          if "Answers" in post
+                          for answer in post["Answers"]])
+
+    @property
     def f_avg_num_upvotes(self):
         '''
         Average number of upvotes received per initial post
@@ -239,7 +253,7 @@ class User:
         '''
         return sum(1 for vote in self.get_votes()
                    if vote["VoteType"] == "Bookmark") \
-            / self.f_num_init_posts 
+            / self.f_num_init_posts
 
     @property
     def f_prop_accepted_answers(self):

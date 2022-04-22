@@ -65,6 +65,7 @@ def user_to_vec(user_dict: UserDict):
         "avg_num_answers": user.f_avg_num_answers,
         "avg_rep_top_answerers": user.f_avg_rep_top_answerers,
         "avg_age_top_answerers": user.f_avg_age_top_answerers,
+        "avg_answer_subjectivity": user.f_avg_answer_subjectivity,
 
         "avg_num_upvotes": user.f_avg_num_upvotes,
         "avg_num_downvotes": user.f_avg_num_downvotes,
@@ -163,6 +164,7 @@ F_ALL = (
     "avg_num_answers",
     "avg_rep_top_answerers",
     "avg_age_top_answerers",
+    "avg_answer_subjectivity",
     "avg_num_upvotes",
     "avg_num_downvotes",
     "avg_num_bookmarkers",
@@ -212,7 +214,8 @@ received at least one answer
 '''
 F_ANSWERED = union_cols(F_ASKER, (
     "avg_rep_top_answerers",
-    "avg_age_top_answerers"
+    "avg_age_top_answerers",
+    "avg_answer_subjectivity"
 ))
 
 '''
