@@ -59,19 +59,18 @@ def user_to_vec(user_dict: UserDict):
         # IVs #
         #######
 
-        "avg_num_edits": user.f_avg_num_edits,
+        "prop_edited": user.f_prop_edited,
         "avg_rep_editors": user.f_avg_rep_editors,
         "avg_age_editors": user.f_avg_age_editors,
 
-        "avg_num_answers": user.f_avg_num_answers,
+        "prop_answered": user.f_prop_answered,
         "avg_rep_top_answerers": user.f_avg_rep_top_answerers,
         "avg_age_top_answerers": user.f_avg_age_top_answerers,
 
-        "avg_num_upvotes": user.f_avg_num_upvotes,
-        "avg_num_downvotes": user.f_avg_num_downvotes,
-        "avg_num_bookmarkers": user.f_avg_num_bookmarkers,
+        "prop_upvoted": user.f_prop_upvoted,
+        "prop_downvoted": user.f_prop_downvotes,
 
-        "prop_accepted_answers": user.f_prop_accepted,
+        "prop_accepted": user.f_prop_accepted,
 
         ######
         # DV #
@@ -105,7 +104,7 @@ def vectorize(user_data: Sequence[UserDict], verbose=True):
     return pd.DataFrame(data, dtype=float)
 
 
-def prepare_dataset(filename="cache/vectorized_dataset.csv", force_recompute=False, verbose=True) -> pd.DataFrame:
+def prepare_dataset(filename="cache/vectorized_dataset2.csv", force_recompute=False, verbose=True) -> pd.DataFrame:
     '''
     Loads vectorized dataset from specified file (if exists), or
     computes the dataset and writes it to the specified file
@@ -155,17 +154,18 @@ F_ALL = (
     "num_init_posts",
     "prop_qs",
     "avg_init_post_len",
-    "avg_num_edits",
+
+    "prop_edited",
     "avg_rep_editors",
     "avg_age_editors",
-    "avg_num_answers",
+    "prop_answered",
     "avg_rep_top_answerers",
     "avg_age_top_answerers",
-    "avg_num_upvotes",
-    "avg_num_downvotes",
-    "avg_num_bookmarkers",
-    "prop_accepted_answers",
-    "retention"
+    "prop_upvoted",
+    "prop_downvoted",
+    "prop_accepted",
+
+    "retention",
 )
 '''
 All feature names
@@ -177,11 +177,12 @@ F_BASIC = (
     "num_init_posts",
     "prop_qs",
     "avg_init_post_len",
-    "avg_num_edits",
-    "avg_num_upvotes",
-    "avg_num_downvotes",
-    "avg_num_bookmarkers",
-    "retention"
+
+    "prop_edited",
+    "prop_upvoted",
+    "prop_downvoted",
+
+    "retention",
 )
 '''
 Names of basic input features gauranteed to be 
@@ -191,7 +192,7 @@ applicable to all users
 
 F_EDITED = union_cols(F_BASIC, (
     "avg_rep_editors",
-    "avg_age_editors"
+    "avg_age_editors",
 ))
 '''
 Names of features that are guaranteed to be 
@@ -200,7 +201,7 @@ one edit
 '''
 
 
-F_ASKER = union_cols(F_BASIC, ("avg_num_answers",))
+F_ASKER = union_cols(F_BASIC, ("prop_answered",))
 '''
 Names of features that care guaranteed to be 
 applicable to all users that have posted at least 
@@ -219,7 +220,7 @@ received at least one answer
 '''
 
 
-F_ANSWERER = union_cols(F_BASIC, ("prop_accepted_answers",))
+F_ANSWERER = union_cols(F_BASIC, ("prop_accepted",))
 '''
 Names of features that are guaranteed to be present
 on all users that have posted at least one answer
@@ -264,7 +265,7 @@ def to_csv(summary):
 
 
 def analyze_all():
-    dataset = prepare_dataset(verbose=False)
+    dataset = prepare_dataset(verbose=True)
 
     # Step 1: Normalize all columns by mean/stddev
     normed_dataset = (dataset - dataset.mean(skipna=True)) / dataset.std()
@@ -273,16 +274,16 @@ def analyze_all():
     normed_dataset[["retention"]] = dataset[["retention"]]
 
     # Step 2: Analyze subsets of features
-    # print('BASIC\n')
-    # analyze_subset(normed_dataset, F_BASIC)
-    # print('\nEDITED\n')
-    # analyze_subset(normed_dataset, F_EDITED)
-    # print('\nASKER\n')
-    # analyze_subset(normed_dataset, F_ASKER)
-    # print('\nANSWERED\n')
-    # analyze_subset(normed_dataset, F_ANSWERED)
-    # print('\nANSWERER\n')
-    # analyze_subset(normed_dataset, F_ANSWERER)
+    print('BASIC\n')
+    analyze_subset(normed_dataset, F_BASIC)
+    print('\nEDITED\n')
+    analyze_subset(normed_dataset, F_EDITED)
+    print('\nASKER\n')
+    analyze_subset(normed_dataset, F_ASKER)
+    print('\nANSWERED\n')
+    analyze_subset(normed_dataset, F_ANSWERED)
+    print('\nANSWERER\n')
+    analyze_subset(normed_dataset, F_ANSWERER)
 
     print()
     print('MEAN\n')

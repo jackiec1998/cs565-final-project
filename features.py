@@ -160,6 +160,15 @@ class User:
             / self.f_num_init_posts
 
     @property
+    def f_prop_edited(self):
+        '''
+        Proportion of posts that were edited
+        '''
+        return maybe_avg([1 if ("Edits" in post
+                                and len(post["Edits"]) > 0) else 0
+                          for post in self.raw_data["Posts"]])
+
+    @ property
     def f_avg_rep_editors(self):
         '''
         Average reputation of editors
@@ -168,7 +177,7 @@ class User:
         '''
         return maybe_avg([edit["EditorRep"] for edit in self.get_edits()])
 
-    @property
+    @ property
     def f_avg_age_editors(self):
         '''
         Average age of editors (in days)
@@ -177,7 +186,7 @@ class User:
         '''
         return maybe_avg([edit["EditorAge"] for edit in self.get_edits()])
 
-    @property
+    @ property
     def f_avg_num_answers(self):
         '''
         Average number of answers received for each question posted
@@ -188,7 +197,17 @@ class User:
                           for post in self.raw_data["Posts"]
                           if post["PostType"] == "Question"])
 
-    @property
+    @ property
+    def f_prop_answered(self):
+        '''
+        Proportion of questions that were answered
+        '''
+        return maybe_avg([1 if ("Answers" in post
+                                and len(post["Answers"]) > 0) else 0
+                          for post in self.raw_data["Posts"]
+                          if post["PostType"] == "Question"])
+
+    @ property
     def f_avg_rep_top_answerers(self):
         '''
         Average reputation of author of the user selected answer or
@@ -198,17 +217,17 @@ class User:
         '''
         return maybe_avg([answer["AnswererRep"] for answer in self.get_top_answers()])
 
-    @property
+    @ property
     def f_avg_age_top_answerers(self):
         '''
         Average age (in days) of author of the user selected answer or
-        top scoring answer 
+        top scoring answer
 
         real x, x > 0 or None if no questions posted or no answers received
         '''
         return maybe_avg([answer["AnswererAge"] for answer in self.get_top_answers()])
 
-    @property
+    @ property
     def f_avg_num_upvotes(self):
         '''
         Average number of upvotes received per initial post
@@ -219,7 +238,16 @@ class User:
                    if vote["VoteType"] == "UpMod") \
             / self.f_num_init_posts
 
-    @property
+    @ property
+    def f_prop_upvoted(self):
+        '''
+        Proportion of posts that were upvoted
+        '''
+        return sum(1 for post in self.raw_data["Posts"]
+                   if has_vote(post, 'UpMod')) \
+            / self.f_num_init_posts
+
+    @ property
     def f_avg_num_downvotes(self):
         '''
         Average number of downvotes received per initial post
@@ -230,7 +258,16 @@ class User:
                    if vote["VoteType"] == "DownMod") \
             / self.f_num_init_posts
 
-    @property
+    @ property
+    def f_prop_downvotes(self):
+        '''
+        Proportion of posts that were downvoted
+        '''
+        return sum(1 for post in self.raw_data["Posts"]
+                   if has_vote(post, 'DownMod')) \
+            / self.f_num_init_posts
+
+    @ property
     def f_avg_num_bookmarkers(self):
         '''
         Average number of people who bookmarked each initial post
@@ -239,12 +276,12 @@ class User:
         '''
         return sum(1 for vote in self.get_votes()
                    if vote["VoteType"] == "Bookmark") \
-            / self.f_num_init_posts 
+            / self.f_num_init_posts
 
-    @property
-    def f_prop_accepted_answers(self):
+    @ property
+    def f_prop_accepted(self):
         '''
-        Proportion of answers (posted by this user) 
+        Proportion of answers (posted by this user)
         that were accepted by the asker
 
         real x, 0 <= x <= 1 or None if no answers were posted
@@ -253,7 +290,7 @@ class User:
                              if vote["VoteType"] == "AcceptedByOriginator"),
                          self.NumAnswers)
 
-    @property
+    @ property
     def f_retention(self):
         '''
         1 if user makes another post after 6mo, 0 otherwise
